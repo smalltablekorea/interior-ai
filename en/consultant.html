@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interior Consultant | SmallTable</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        header a { color: #667eea; text-decoration: none; font-size: 1.2rem; }
+        header h1 { font-size: 1.3rem; }
+        .chat-container { max-width: 700px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; padding: 0 16px; }
+        .messages { flex: 1; overflow-y: auto; padding: 24px 0; display: flex; flex-direction: column; gap: 16px; }
+        .msg { max-width: 85%; padding: 16px 20px; border-radius: 16px; line-height: 1.7; font-size: 0.95rem; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .msg.bot { background: #1a1a2e; border: 1px solid #2a2a4e; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .msg.user { background: #2a1a4e; border: 1px solid #3a2a5e; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg .label { font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+        .quick-replies { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0; }
+        .quick-replies button { background: #1a1a1a; border: 1px solid #444; color: #ccc; padding: 10px 18px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .quick-replies button:hover { border-color: #667eea; color: #fff; }
+        .input-bar { display: flex; gap: 10px; padding: 16px 0 24px; }
+        .input-bar input { flex: 1; padding: 14px 18px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; color: #fff; font-size: 1rem; }
+        .input-bar input:focus { outline: none; border-color: #667eea; }
+        .input-bar button { padding: 14px 24px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+        .style-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .style-card:hover { border-color: #667eea; transform: scale(1.02); }
+        .style-card .emoji { font-size: 2rem; margin-bottom: 8px; }
+        .style-card .name { font-weight: 600; margin-bottom: 4px; }
+        .style-card .desc { font-size: 0.8rem; color: #888; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← Home</a>
+        <h1>🎨 AI Interior Consultant</h1>
+    </header>
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+        <div id="quickReplies" class="quick-replies"></div>
+        <div class="input-bar">
+            <input type="text" id="userInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const messages = document.getElementById('messages');
+        let conversationState = 'start';
+        const userData = {};
+
+        const styleData = {
+            'Modern Minimal': {
+                emoji: '⬜', desc: 'Clean lines, neutral tones, storage-focused',
+                colors: 'White, Gray, Black accents',
+                materials: 'Matte paint, engineered hardwood, porcelain tile',
+                furniture: 'Low-profile sofa, built-in storage, recessed lighting',
+                tips: 'Maximize wall storage and minimize visible objects. Use indirect lighting to create a sense of depth and spaciousness.'
+            },
+            'Natural Wood': {
+                emoji: '🪵', desc: 'Warm timber, organic textures',
+                colors: 'Beige, Warm Gray, Wood tones',
+                materials: 'Solid wood flooring, wood veneer, natural stone',
+                furniture: 'Wooden dining table, linen sofa, rattan accents',
+                tips: 'Use oak hardwood flooring with light beige walls for a warm yet spacious feel. Layer textures with natural fabrics.'
+            },
+            'Hotel Modern': {
+                emoji: '🏨', desc: 'Luxurious hotel-inspired design',
+                colors: 'Dark Gray, Gold, Marble',
+                materials: 'Marble tile, glass, ambient lighting',
+                furniture: 'King bed, dimmable lights, freestanding bathtub',
+                tips: 'Indirect lighting and marble accents are key. Invest in the bathroom for maximum hotel ambiance.'
+            },
+            'Scandinavian': {
+                emoji: '🇸🇪', desc: 'Bright, functional, cozy',
+                colors: 'White, Pastel, Light Wood',
+                materials: 'Birch wood, white tile, natural fabrics',
+                furniture: 'Simple chairs, pendant lights, indoor plants',
+                tips: 'Start with a white base and add 1-2 pastel accent colors. Use plants and textiles to add warmth.'
+            },
+            'Industrial': {
+                emoji: '🏭', desc: 'Exposed concrete, metal, vintage',
+                colors: 'Concrete Gray, Black, Brown',
+                materials: 'Exposed concrete, steel frames, reclaimed wood',
+                furniture: 'Metal shelving, leather sofa, Edison bulbs',
+                tips: 'Removing ceiling moldings to expose concrete saves costs and adds character. Pair with warm leather accents.'
+            },
+            'Japandi': {
+                emoji: '🎋', desc: 'Japanese minimalism meets Scandinavian warmth',
+                colors: 'Muted earth tones, Off-white, Charcoal',
+                materials: 'Light oak, washi paper, natural stone, linen',
+                furniture: 'Low platform bed, floor cushions, paper lanterns',
+                tips: 'Combine Japanese wabi-sabi imperfection with Nordic functionality. Use negative space intentionally.'
+            }
+        };
+
+        function addMessage(text, type, html=false) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            const label = type === 'bot' ? '🤖 AI Consultant' : '👤 You';
+            div.innerHTML = `<div class="label">${label}</div>${html ? text : text.replace(/\n/g, '<br>')}`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showQuickReplies(options) {
+            const qr = document.getElementById('quickReplies');
+            qr.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt;
+                btn.onclick = () => handleInput(opt);
+                qr.appendChild(btn);
+            });
+        }
+
+        function clearQuickReplies() { document.getElementById('quickReplies').innerHTML = ''; }
+
+        function showStylePicker() {
+            let html = '<div class="style-grid">';
+            Object.keys(styleData).forEach(name => {
+                const s = styleData[name];
+                html += `<div class="style-card" onclick="selectStyle('${name}')">
+                    <div class="emoji">${s.emoji}</div>
+                    <div class="name">${name}</div>
+                    <div class="desc">${s.desc}</div>
+                </div>`;
+            });
+            html += '</div>';
+            addMessage('Which style speaks to you? Pick one below.' + html, 'bot', true);
+        }
+
+        function selectStyle(name) {
+            userData.style = name;
+            addMessage(name, 'user');
+            conversationState = 'budget';
+            setTimeout(() => {
+                addMessage(`${styleData[name].emoji} ${name} — excellent choice!\n\nStyle highlights:\n• Colors: ${styleData[name].colors}\n• Key materials: ${styleData[name].materials}\n\nWhat's your budget range? This helps me tailor recommendations.`, 'bot');
+                showQuickReplies(['Under $20,000', '$20,000–$50,000', '$50,000–$100,000', 'Over $100,000']);
+            }, 500);
+        }
+
+        function handleInput(text) {
+            clearQuickReplies();
+            addMessage(text, 'user');
+            setTimeout(() => {
+                switch(conversationState) {
+                    case 'start':
+                        userData.space = text;
+                        conversationState = 'area';
+                        addMessage('Great! What\'s the approximate size of your space?', 'bot');
+                        showQuickReplies(['Under 50 m²', '50–80 m²', '80–120 m²', 'Over 120 m²']);
+                        break;
+                    case 'area':
+                        userData.area = text;
+                        conversationState = 'style';
+                        showStylePicker();
+                        break;
+                    case 'budget':
+                        userData.budget = text;
+                        conversationState = 'family';
+                        addMessage('Budget noted! Last question — who will be living in this space?\nThis helps me optimize the layout.', 'bot');
+                        showQuickReplies(['Single occupant', 'Couple', 'Family with kids', 'Multi-generational']);
+                        break;
+                    case 'family':
+                        userData.family = text;
+                        conversationState = 'done';
+                        generateConsultation();
+                        break;
+                    default:
+                        addMessage('For more detailed advice, feel free to request a free consultation with SmallTable! 😊', 'bot');
+                }
+            }, 600);
+        }
+
+        function generateConsultation() {
+            const s = styleData[userData.style];
+            const familyTips = {
+                'Single occupant': 'For solo living, multi-functional furniture is key. Consider a murphy bed, fold-out desk, and maximize open floor space.',
+                'Couple': 'For couples, invest in a quality kitchen island for shared meals and a walk-in closet. Dual-sink vanity is a great bathroom upgrade.',
+                'Family with kids': 'With children, prioritize rounded-edge furniture, ample storage, and a dedicated play area. Use washable wall paint in high-traffic zones.',
+                'Multi-generational': 'For multi-gen living, consider non-slip flooring, step-free entries, wider corridors, and accessible bathroom fixtures.'
+            };
+
+            let report = `📋 <strong>Personalized Interior Design Report</strong>\n\n`;
+            report += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            report += `📍 Space: ${userData.space || 'Apartment'} (${userData.area || '80-120 m²'})\n`;
+            report += `🎨 Style: ${s.emoji} ${userData.style}\n`;
+            report += `💰 Budget: ${userData.budget}\n`;
+            report += `👥 Household: ${userData.family}\n`;
+            report += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            report += `🎨 <strong>Color Palette</strong>\n${s.colors}\n\n`;
+            report += `🪵 <strong>Recommended Materials</strong>\n${s.materials}\n\n`;
+            report += `🛋 <strong>Suggested Furniture & Decor</strong>\n${s.furniture}\n\n`;
+            report += `💡 <strong>Design Tips</strong>\n${s.tips}\n\n`;
+            report += `👥 <strong>Household-Specific Advice</strong>\n${familyTips[userData.family] || ''}\n\n`;
+            report += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            report += `✅ Ready to bring this vision to life?\nSchedule a free on-site consultation with SmallTable Design Group!\n\n`;
+            report += `📞 <a href="tel:+82-10-3173-0175" style="color:#667eea">+82-10-3173-0175</a>\n`;
+            report += `💬 <a href="https://open.kakao.com/o/s7h6q4Xf" target="_blank" style="color:#667eea">KakaoTalk Consultation</a>`;
+            addMessage(report, 'bot', true);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            handleInput(text);
+        }
+
+        setTimeout(() => {
+            addMessage('Welcome to the SmallTable AI Interior Consultant! 🎨\n\nWhat type of space are you planning to renovate?', 'bot');
+            showQuickReplies(['Apartment', 'House', 'Studio / Loft', 'Commercial / Office']);
+        }, 500);
+    </script>
+</body>
+</html>

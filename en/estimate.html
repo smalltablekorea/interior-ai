@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cost Estimator | SmallTable</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        header a { color: #667eea; text-decoration: none; font-size: 1.2rem; }
+        header h1 { font-size: 1.3rem; }
+        .container { max-width: 700px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; display: flex; flex-direction: column; }
+        .step { display: none; animation: fadeIn 0.3s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question { font-size: 1.2rem; margin-bottom: 24px; line-height: 1.6; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .options button { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .options button:hover { border-color: #667eea; background: #1a1a2e; }
+        .options button.selected { border-color: #667eea; background: #1a1a3e; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; color: #999; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 14px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 1rem; }
+        .input-group input:focus { outline: none; border-color: #667eea; }
+        .nav-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-next { padding: 14px 32px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn-back { padding: 14px 24px; background: transparent; border: 1px solid #444; color: #999; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+        .result-card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 32px; margin-top: 20px; }
+        .result-card h2 { font-size: 1.5rem; margin-bottom: 20px; color: #667eea; }
+        .result-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #1a1a1a; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #999; }
+        .result-value { font-weight: 600; }
+        .result-total { font-size: 1.4rem; margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; display: flex; justify-content: space-between; }
+        .result-total .result-value { color: #667eea; font-size: 1.5rem; }
+        .disclaimer { margin-top: 20px; padding: 16px; background: #1a1a1a; border-radius: 10px; color: #888; font-size: 0.85rem; line-height: 1.6; }
+        .cta { margin-top: 24px; text-align: center; }
+        .cta a { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; text-decoration: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; }
+        .progress { display: flex; gap: 8px; margin-bottom: 30px; }
+        .progress-dot { width: 40px; height: 4px; background: #333; border-radius: 2px; transition: background 0.3s; }
+        .progress-dot.done { background: #667eea; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .checkbox-group label:hover { border-color: #667eea; }
+        .checkbox-group input[type="checkbox"] { accent-color: #667eea; }
+        .checkbox-group label.checked { border-color: #667eea; background: #1a1a3e; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← Home</a>
+        <h1>💰 AI Cost Estimator</h1>
+    </header>
+    <div class="container">
+        <div class="progress" id="progress"></div>
+
+        <div class="step active" id="step1">
+            <div class="question">What type of space are you renovating?</div>
+            <div class="options" id="spaceType">
+                <button onclick="selectOption(this,'spaceType','Apartment')">🏢 Apartment / Condo</button>
+                <button onclick="selectOption(this,'spaceType','House')">🏠 House / Townhouse</button>
+                <button onclick="selectOption(this,'spaceType','Studio')">🏬 Studio / Loft</button>
+                <button onclick="selectOption(this,'spaceType','Commercial')">🏪 Commercial / Office</button>
+            </div>
+        </div>
+
+        <div class="step" id="step2">
+            <div class="question">What is the size of your space?</div>
+            <div class="input-group">
+                <label>Area in square meters (m²)</label>
+                <input type="number" id="area" placeholder="e.g. 85" min="10" max="500">
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(1)">← Back</button>
+                <button class="btn-next" onclick="if(document.getElementById('area').value) goStep(3)">Next →</button>
+            </div>
+        </div>
+
+        <div class="step" id="step3">
+            <div class="question">What scope of renovation are you planning?</div>
+            <div class="options" id="scopeType">
+                <button onclick="selectOption(this,'scopeType','Full Renovation')">🔨 Full Renovation (complete remodel)</button>
+                <button onclick="selectOption(this,'scopeType','Partial Renovation')">🪛 Partial Renovation (specific rooms)</button>
+                <button onclick="selectOption(this,'scopeType','Painting & Flooring')">📜 Painting + Flooring only</button>
+                <button onclick="selectOption(this,'scopeType','Bathroom')">🚿 Bathroom Remodel</button>
+                <button onclick="selectOption(this,'scopeType','Kitchen')">🍳 Kitchen Remodel</button>
+            </div>
+        </div>
+
+        <div class="step" id="step4">
+            <div class="question">What finish level do you prefer?</div>
+            <div class="options" id="gradeType">
+                <button onclick="selectOption(this,'gradeType','Budget')">💎 Budget — Cost-effective domestic materials</button>
+                <button onclick="selectOption(this,'gradeType','Mid-Range')">✨ Mid-Range — Brand materials + design</button>
+                <button onclick="selectOption(this,'gradeType','Premium')">👑 Premium — Imported luxury materials</button>
+            </div>
+        </div>
+
+        <div class="step" id="step5">
+            <div class="question">Any additional work needed? (select all that apply)</div>
+            <div class="checkbox-group" id="extras">
+                <label><input type="checkbox" value="Demolition" onchange="toggleCheck(this)"> 🗑 Demolition</label>
+                <label><input type="checkbox" value="Electrical" onchange="toggleCheck(this)"> ⚡ Electrical Work</label>
+                <label><input type="checkbox" value="Plumbing" onchange="toggleCheck(this)"> 🔧 Plumbing</label>
+                <label><input type="checkbox" value="HVAC" onchange="toggleCheck(this)"> ❄️ HVAC / AC Install</label>
+                <label><input type="checkbox" value="Lighting" onchange="toggleCheck(this)"> 💡 Lighting Upgrade</label>
+                <label><input type="checkbox" value="Built-in Closet" onchange="toggleCheck(this)"> 🗄 Built-in Closet</label>
+                <label><input type="checkbox" value="Interior Door" onchange="toggleCheck(this)"> 🚪 Interior Door Install</label>
+                <label><input type="checkbox" value="Balcony Expansion" onchange="toggleCheck(this)"> 🏗 Balcony Expansion</label>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(4)">← Back</button>
+                <button class="btn-next" onclick="calculate()">Get Estimate →</button>
+            </div>
+        </div>
+
+        <div class="step" id="result">
+            <div class="result-card" id="resultCard"></div>
+            <div class="disclaimer">
+                ⚠️ This estimate is generated by AI based on average market data.<br>
+                Actual costs may vary depending on site conditions, material choices, and project complexity.<br>
+                For an accurate quote, request a free consultation from SmallTable Design Group.
+            </div>
+            <div class="cta">
+                <a href="https://open.kakao.com/o/s7h6q4Xf" target="_blank">📞 Request Free Consultation</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const data = {};
+        const totalSteps = 5;
+        let currentStep = 1;
+
+        function updateProgress() {
+            const el = document.getElementById('progress');
+            el.innerHTML = '';
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot' + (i <= currentStep ? ' done' : '');
+                el.appendChild(dot);
+            }
+        }
+        updateProgress();
+
+        function selectOption(btn, key, value) {
+            data[key] = value;
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            setTimeout(() => goStep(currentStep + 1), 300);
+        }
+
+        function toggleCheck(cb) { cb.closest('label').classList.toggle('checked', cb.checked); }
+
+        function goStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+            currentStep = n;
+            updateProgress();
+        }
+
+        function calculate() {
+            const areaSqm = parseInt(document.getElementById('area').value) || 85;
+            const scope = data.scopeType || 'Full Renovation';
+            const grade = data.gradeType || 'Mid-Range';
+            const space = data.spaceType || 'Apartment';
+
+            // Price per sqm in USD
+            const basePrices = {
+                'Full Renovation': { 'Budget': 350, 'Mid-Range': 550, 'Premium': 850 },
+                'Partial Renovation': { 'Budget': 200, 'Mid-Range': 350, 'Premium': 550 },
+                'Painting & Flooring': { 'Budget': 60, 'Mid-Range': 100, 'Premium': 160 },
+                'Bathroom': { 'Budget': 120, 'Mid-Range': 200, 'Premium': 320 },
+                'Kitchen': { 'Budget': 150, 'Mid-Range': 260, 'Premium': 420 }
+            };
+
+            const extraPrices = {
+                'Demolition': areaSqm * 20,
+                'Electrical': areaSqm * 30,
+                'Plumbing': areaSqm * 35,
+                'HVAC': 2500,
+                'Lighting': areaSqm * 12,
+                'Built-in Closet': 4000,
+                'Interior Door': 2800,
+                'Balcony Expansion': areaSqm * 45
+            };
+
+            const basePrice = (basePrices[scope]?.[grade] || 450) * areaSqm;
+            const spaceMultiplier = { 'Apartment': 1.0, 'House': 1.05, 'Studio': 0.9, 'Commercial': 1.15 };
+            const adjustedBase = Math.round(basePrice * (spaceMultiplier[space] || 1.0));
+
+            const selectedExtras = [];
+            document.querySelectorAll('#extras input:checked').forEach(cb => {
+                selectedExtras.push({ name: cb.value, price: extraPrices[cb.value] || 500 });
+            });
+            const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
+            const subtotal = adjustedBase + extrasTotal;
+            const tax = Math.round(subtotal * 0.1);
+            const total = subtotal + tax;
+
+            let html = `<h2>📊 AI Estimate Results</h2>`;
+            html += `<div class="result-row"><span class="result-label">Space Type</span><span class="result-value">${space}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">Area</span><span class="result-value">${areaSqm} m²</span></div>`;
+            html += `<div class="result-row"><span class="result-label">Scope</span><span class="result-value">${scope}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">Finish Level</span><span class="result-value">${grade}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">Base Cost</span><span class="result-value">$${adjustedBase.toLocaleString()}</span></div>`;
+            selectedExtras.forEach(e => {
+                html += `<div class="result-row"><span class="result-label">+ ${e.name}</span><span class="result-value">$${e.price.toLocaleString()}</span></div>`;
+            });
+            html += `<div class="result-row"><span class="result-label">Tax (10%)</span><span class="result-value">$${tax.toLocaleString()}</span></div>`;
+            html += `<div class="result-total"><span class="result-label">Total Estimate</span><span class="result-value">$${total.toLocaleString()}</span></div>`;
+            html += `<p style="color:#888;margin-top:12px;font-size:0.9rem;">Cost per m²: ~$${Math.round(total/areaSqm).toLocaleString()} (tax included)</p>`;
+
+            document.getElementById('resultCard').innerHTML = html;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+</body>
+</html>
