@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 견적 도우미 | 스몰테이블</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        header a { color: #667eea; text-decoration: none; font-size: 1.2rem; }
+        header h1 { font-size: 1.3rem; }
+        .container { max-width: 700px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; display: flex; flex-direction: column; }
+        .step { display: none; animation: fadeIn 0.3s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question { font-size: 1.2rem; margin-bottom: 24px; line-height: 1.6; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .options button { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .options button:hover { border-color: #667eea; background: #1a1a2e; }
+        .options button.selected { border-color: #667eea; background: #1a1a3e; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; color: #999; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-group input, .input-group select { width: 100%; padding: 14px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 1rem; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #667eea; }
+        .nav-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-next { padding: 14px 32px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn-next:hover { opacity: 0.85; }
+        .btn-back { padding: 14px 24px; background: transparent; border: 1px solid #444; color: #999; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+        .result-card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 32px; margin-top: 20px; }
+        .result-card h2 { font-size: 1.5rem; margin-bottom: 20px; color: #667eea; }
+        .result-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #1a1a1a; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { color: #999; }
+        .result-value { font-weight: 600; }
+        .result-total { font-size: 1.4rem; margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; display: flex; justify-content: space-between; }
+        .result-total .result-value { color: #667eea; font-size: 1.5rem; }
+        .disclaimer { margin-top: 20px; padding: 16px; background: #1a1a1a; border-radius: 10px; color: #888; font-size: 0.85rem; line-height: 1.6; }
+        .cta { margin-top: 24px; text-align: center; }
+        .cta a { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; text-decoration: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; }
+        .progress { display: flex; gap: 8px; margin-bottom: 30px; }
+        .progress-dot { width: 40px; height: 4px; background: #333; border-radius: 2px; transition: background 0.3s; }
+        .progress-dot.done { background: #667eea; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .checkbox-group label:hover { border-color: #667eea; }
+        .checkbox-group input[type="checkbox"] { accent-color: #667eea; }
+        .checkbox-group label.checked { border-color: #667eea; background: #1a1a3e; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← 홈</a>
+        <h1>💰 AI 견적 도우미</h1>
+    </header>
+    <div class="container">
+        <div class="progress" id="progress"></div>
+        
+        <!-- Step 1: 공간 유형 -->
+        <div class="step active" id="step1">
+            <div class="question">어떤 공간의 인테리어를 계획하고 계신가요?</div>
+            <div class="options" id="spaceType">
+                <button onclick="selectOption(this, 'spaceType', '아파트')">🏢 아파트</button>
+                <button onclick="selectOption(this, 'spaceType', '빌라/다세대')">🏠 빌라 / 다세대</button>
+                <button onclick="selectOption(this, 'spaceType', '오피스텔')">🏬 오피스텔</button>
+                <button onclick="selectOption(this, 'spaceType', '상가/사무실')">🏪 상가 / 사무실</button>
+            </div>
+        </div>
+
+        <!-- Step 2: 평수 -->
+        <div class="step" id="step2">
+            <div class="question">공간의 크기가 어떻게 되나요?</div>
+            <div class="input-group">
+                <label>전용면적 (평)</label>
+                <input type="number" id="area" placeholder="예: 32" min="5" max="200">
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(1)">← 이전</button>
+                <button class="btn-next" onclick="if(document.getElementById('area').value) goStep(3)">다음 →</button>
+            </div>
+        </div>
+
+        <!-- Step 3: 공사 범위 -->
+        <div class="step" id="step3">
+            <div class="question">어떤 범위의 공사를 계획하고 계신가요?</div>
+            <div class="options" id="scopeType">
+                <button onclick="selectOption(this, 'scopeType', '올수리')">🔨 올수리 (전체 리모델링)</button>
+                <button onclick="selectOption(this, 'scopeType', '부분수리')">🪛 부분수리 (특정 공간만)</button>
+                <button onclick="selectOption(this, 'scopeType', '도배장판')">📜 도배 + 장판/마루</button>
+                <button onclick="selectOption(this, 'scopeType', '욕실')">🚿 욕실 리모델링</button>
+                <button onclick="selectOption(this, 'scopeType', '주방')">🍳 주방 리모델링</button>
+            </div>
+        </div>
+
+        <!-- Step 4: 마감재 등급 -->
+        <div class="step" id="step4">
+            <div class="question">원하시는 마감재 등급은 어떻게 되나요?</div>
+            <div class="options" id="gradeType">
+                <button onclick="selectOption(this, 'gradeType', '실속형')">💎 실속형 — 가성비 좋은 국산 자재</button>
+                <button onclick="selectOption(this, 'gradeType', '중급형')">✨ 중급형 — 브랜드 자재 + 디자인</button>
+                <button onclick="selectOption(this, 'gradeType', '고급형')">👑 고급형 — 프리미엄 수입 자재</button>
+            </div>
+        </div>
+
+        <!-- Step 5: 추가 옵션 -->
+        <div class="step" id="step5">
+            <div class="question">추가로 필요한 항목이 있나요? (복수 선택 가능)</div>
+            <div class="checkbox-group" id="extras">
+                <label><input type="checkbox" value="철거" onchange="toggleCheck(this)"> 🗑 기존 철거</label>
+                <label><input type="checkbox" value="전기" onchange="toggleCheck(this)"> ⚡ 전기 공사</label>
+                <label><input type="checkbox" value="설비" onchange="toggleCheck(this)"> 🔧 설비 (배관)</label>
+                <label><input type="checkbox" value="에어컨" onchange="toggleCheck(this)"> ❄️ 에어컨 설치</label>
+                <label><input type="checkbox" value="조명" onchange="toggleCheck(this)"> 💡 조명 교체</label>
+                <label><input type="checkbox" value="붙박이장" onchange="toggleCheck(this)"> 🗄 붙박이장</label>
+                <label><input type="checkbox" value="중문" onchange="toggleCheck(this)"> 🚪 중문 설치</label>
+                <label><input type="checkbox" value="발코니확장" onchange="toggleCheck(this)"> 🏗 발코니 확장</label>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(4)">← 이전</button>
+                <button class="btn-next" onclick="calculate()">견적 확인 →</button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div class="step" id="result">
+            <div class="result-card" id="resultCard"></div>
+            <div class="disclaimer">
+                ⚠️ 본 견적은 AI가 시장 평균 데이터를 기반으로 산출한 <strong>예상 견적</strong>입니다.<br>
+                실제 견적은 현장 상태, 자재 선택, 공사 난이도에 따라 달라질 수 있습니다.<br>
+                정확한 견적은 스몰테이블디자인그룹에 무료 상담을 신청해 주세요.
+            </div>
+            <div class="cta">
+                <a href="https://open.kakao.com/o/s7h6q4Xf" target="_blank">📞 무료 상담 신청하기</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const data = {};
+        const totalSteps = 5;
+        let currentStep = 1;
+
+        function updateProgress() {
+            const el = document.getElementById('progress');
+            el.innerHTML = '';
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot' + (i <= currentStep ? ' done' : '');
+                el.appendChild(dot);
+            }
+        }
+        updateProgress();
+
+        function selectOption(btn, key, value) {
+            data[key] = value;
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            setTimeout(() => goStep(currentStep + 1), 300);
+        }
+
+        function toggleCheck(cb) {
+            cb.closest('label').classList.toggle('checked', cb.checked);
+        }
+
+        function goStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step' + n).classList.add('active');
+            currentStep = n;
+            updateProgress();
+        }
+
+        function calculate() {
+            const area = parseInt(document.getElementById('area').value) || 30;
+            const scope = data.scopeType || '올수리';
+            const grade = data.gradeType || '중급형';
+            const space = data.spaceType || '아파트';
+            
+            // 평당 단가 (만원) - 시장 평균 기반
+            const basePrices = {
+                '올수리': { '실속형': 250, '중급형': 380, '고급형': 550 },
+                '부분수리': { '실속형': 150, '중급형': 230, '고급형': 350 },
+                '도배장판': { '실속형': 40, '중급형': 65, '고급형': 100 },
+                '욕실': { '실속형': 80, '중급형': 130, '고급형': 200 },
+                '주방': { '실속형': 100, '중급형': 170, '고급형': 280 }
+            };
+
+            const extraPrices = {
+                '철거': area * 15,
+                '전기': area * 20,
+                '설비': area * 25,
+                '에어컨': 150,
+                '조명': area * 8,
+                '붙박이장': 250,
+                '중문': 180,
+                '발코니확장': area * 30
+            };
+
+            const basePrice = (basePrices[scope]?.[grade] || 300) * area;
+            
+            // 공간 유형 보정
+            const spaceMultiplier = { '아파트': 1.0, '빌라/다세대': 0.95, '오피스텔': 0.9, '상가/사무실': 1.1 };
+            const adjustedBase = Math.round(basePrice * (spaceMultiplier[space] || 1.0));
+
+            const selectedExtras = [];
+            document.querySelectorAll('#extras input:checked').forEach(cb => {
+                selectedExtras.push({ name: cb.value, price: extraPrices[cb.value] || 100 });
+            });
+            const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
+            const total = adjustedBase + extrasTotal;
+            const vat = Math.round(total * 0.1);
+
+            let html = `<h2>📊 AI 견적 결과</h2>`;
+            html += `<div class="result-row"><span class="result-label">공간 유형</span><span class="result-value">${space}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">면적</span><span class="result-value">${area}평</span></div>`;
+            html += `<div class="result-row"><span class="result-label">공사 범위</span><span class="result-value">${scope}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">마감재 등급</span><span class="result-value">${grade}</span></div>`;
+            html += `<div class="result-row"><span class="result-label">기본 공사비</span><span class="result-value">${adjustedBase.toLocaleString()}만원</span></div>`;
+            
+            selectedExtras.forEach(e => {
+                html += `<div class="result-row"><span class="result-label">+ ${e.name}</span><span class="result-value">${e.price.toLocaleString()}만원</span></div>`;
+            });
+
+            html += `<div class="result-row"><span class="result-label">부가세 (10%)</span><span class="result-value">${vat.toLocaleString()}만원</span></div>`;
+            html += `<div class="result-total"><span class="result-label">총 예상 견적</span><span class="result-value">${(total + vat).toLocaleString()}만원</span></div>`;
+            html += `<p style="color:#888;margin-top:12px;font-size:0.9rem;">평당 단가 약 ${Math.round((total + vat) / area).toLocaleString()}만원 (부가세 포함)</p>`;
+
+            document.getElementById('resultCard').innerHTML = html;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+</body>
+</html>

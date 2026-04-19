@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스몰테이블 인테리어 AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+        .hero { text-align: center; padding: 80px 20px 40px; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 16px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { color: #888; font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 32px; transition: transform 0.2s, border-color 0.2s; }
+        .card:hover { transform: translateY(-4px); border-color: #667eea; }
+        .card-icon { font-size: 2.5rem; margin-bottom: 16px; }
+        .card h2 { font-size: 1.4rem; margin-bottom: 12px; }
+        .card p { color: #999; line-height: 1.6; margin-bottom: 20px; }
+        .card a { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; transition: opacity 0.2s; }
+        .card a:hover { opacity: 0.85; }
+        .footer { text-align: center; padding: 60px 20px 40px; color: #555; }
+        .footer a { color: #667eea; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>스몰테이블 인테리어 AI</h1>
+        <p>AI 기반 인테리어 도우미 3종 — 견적, 컨설팅, 자재 추천까지 한 곳에서</p>
+    </div>
+    <div class="cards">
+        <div class="card">
+            <div class="card-icon">💰</div>
+            <h2>AI 견적 도우미</h2>
+            <p>평수, 공간, 공사 범위를 입력하면 AI가 예상 견적을 산출합니다. 부분 시공부터 올수리까지 맞춤 견적을 받아보세요.</p>
+            <a href="estimate.html">견적 받기 →</a>
+        </div>
+        <div class="card">
+            <div class="card-icon">🎨</div>
+            <h2>AI 인테리어 컨설턴트</h2>
+            <p>선호 스타일, 예산, 생활 패턴을 알려주시면 AI가 맞춤형 인테리어 디자인 방향을 제안합니다.</p>
+            <a href="consultant.html">상담 시작 →</a>
+        </div>
+        <div class="card">
+            <div class="card-icon">🪵</div>
+            <h2>AI 자재 추천</h2>
+            <p>예산과 스타일에 맞는 최적의 바닥재, 타일, 도어, 몰딩 등을 AI가 추천합니다.</p>
+            <a href="materials.html">추천 받기 →</a>
+        </div>
+    </div>
+    <div class="footer">
+        <p>© 2026 <a href="https://www.instagram.com/smalltable_interior" target="_blank">스몰테이블디자인그룹</a> | 인테리어 문의: 010-3173-0175</p>
+    </div>
+</body>
+</html>

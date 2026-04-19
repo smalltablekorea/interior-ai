@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 자재 추천 | 스몰테이블</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        header a { color: #667eea; text-decoration: none; font-size: 1.2rem; }
+        header h1 { font-size: 1.3rem; }
+        .container { max-width: 800px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; }
+        .step { display: none; animation: fadeIn 0.3s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question { font-size: 1.2rem; margin-bottom: 24px; line-height: 1.6; }
+        .progress { display: flex; gap: 8px; margin-bottom: 30px; }
+        .progress-dot { width: 60px; height: 4px; background: #333; border-radius: 2px; transition: background 0.3s; }
+        .progress-dot.done { background: #667eea; }
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        .category-card { background: #1a1a1a; border: 1px solid #333; border-radius: 14px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .category-card:hover { border-color: #667eea; transform: translateY(-2px); }
+        .category-card.selected { border-color: #667eea; background: #1a1a3e; }
+        .category-card .icon { font-size: 2rem; margin-bottom: 10px; }
+        .category-card .label { font-weight: 600; font-size: 0.95rem; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .options button { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .options button:hover { border-color: #667eea; background: #1a1a2e; }
+        .options button.selected { border-color: #667eea; background: #1a1a3e; }
+        .nav-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-next { padding: 14px 32px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn-back { padding: 14px 24px; background: transparent; border: 1px solid #444; color: #999; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+        .material-results { display: flex; flex-direction: column; gap: 20px; }
+        .material-card { background: #111; border: 1px solid #2a2a2a; border-radius: 16px; padding: 24px; transition: border-color 0.2s; }
+        .material-card:hover { border-color: #444; }
+        .material-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .material-name { font-size: 1.2rem; font-weight: 700; }
+        .material-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-best { background: #1a3a1a; color: #4ade80; border: 1px solid #2a5a2a; }
+        .badge-premium { background: #3a1a3a; color: #c084fc; border: 1px solid #5a2a5a; }
+        .badge-value { background: #1a2a3a; color: #60a5fa; border: 1px solid #2a3a5a; }
+        .material-specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .spec { background: #1a1a1a; padding: 12px; border-radius: 8px; }
+        .spec-label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+        .spec-value { font-weight: 600; font-size: 0.95rem; }
+        .material-desc { color: #999; font-size: 0.9rem; line-height: 1.6; }
+        .material-pros { margin-top: 12px; }
+        .material-pros span { display: inline-block; background: #1a2a1a; color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; margin: 3px 4px 3px 0; }
+        .material-cons span { display: inline-block; background: #2a1a1a; color: #fca5a5; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; margin: 3px 4px 3px 0; }
+        .summary-box { background: #111; border: 2px solid #667eea; border-radius: 16px; padding: 28px; margin-top: 24px; }
+        .summary-box h3 { color: #667eea; margin-bottom: 16px; font-size: 1.2rem; }
+        .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #1a1a1a; }
+        .cta { margin-top: 28px; text-align: center; }
+        .cta a { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; text-decoration: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; }
+        .disclaimer { margin-top: 20px; padding: 16px; background: #1a1a1a; border-radius: 10px; color: #888; font-size: 0.85rem; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← 홈</a>
+        <h1>🪵 AI 자재 추천</h1>
+    </header>
+    <div class="container">
+        <div class="progress" id="progress"></div>
+        
+        <!-- Step 1: 카테고리 -->
+        <div class="step active" id="step1">
+            <div class="question">어떤 자재를 찾고 계신가요?</div>
+            <div class="category-grid" id="categories">
+                <div class="category-card" onclick="selectCategory(this, '바닥재')"><div class="icon">🪵</div><div class="label">바닥재</div></div>
+                <div class="category-card" onclick="selectCategory(this, '타일')"><div class="icon">🟫</div><div class="label">타일</div></div>
+                <div class="category-card" onclick="selectCategory(this, '도어')"><div class="icon">🚪</div><div class="label">도어</div></div>
+                <div class="category-card" onclick="selectCategory(this, '도배')"><div class="icon">📜</div><div class="label">도배/벽지</div></div>
+                <div class="category-card" onclick="selectCategory(this, '주방')"><div class="icon">🍳</div><div class="label">주방 상판</div></div>
+                <div class="category-card" onclick="selectCategory(this, '조명')"><div class="icon">💡</div><div class="label">조명</div></div>
+                <div class="category-card" onclick="selectCategory(this, '욕실')"><div class="icon">🚿</div><div class="label">욕실 기구</div></div>
+                <div class="category-card" onclick="selectCategory(this, '몰딩')"><div class="icon">📐</div><div class="label">몰딩/걸레받이</div></div>
+            </div>
+        </div>
+
+        <!-- Step 2: 스타일 -->
+        <div class="step" id="step2">
+            <div class="question">어떤 분위기를 원하세요?</div>
+            <div class="options" id="styleOptions">
+                <button onclick="selectOpt(this, 'style', '모던')">⬜ 모던 / 미니멀</button>
+                <button onclick="selectOpt(this, 'style', '내추럴')">🪵 내추럴 / 우드</button>
+                <button onclick="selectOpt(this, 'style', '클래식')">🏛 클래식 / 고급</button>
+                <button onclick="selectOpt(this, 'style', '인더스트리얼')">🏭 인더스트리얼</button>
+            </div>
+        </div>
+
+        <!-- Step 3: 예산 -->
+        <div class="step" id="step3">
+            <div class="question">예산 수준은 어떻게 되나요?</div>
+            <div class="options" id="budgetOptions">
+                <button onclick="selectOpt(this, 'budget', '실속')">💵 실속형 — 가성비 우선</button>
+                <button onclick="selectOpt(this, 'budget', '중급')">💎 중급형 — 품질과 가격 균형</button>
+                <button onclick="selectOpt(this, 'budget', '프리미엄')">👑 프리미엄 — 최고급 자재</button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div class="step" id="result"></div>
+    </div>
+
+    <script>
+        const data = {};
+        let currentStep = 1;
+
+        const materialDB = {
+            '바닥재': {
+                '모던': {
+                    '실속': [
+                        { name: '한화 에코노 강마루', price: '평당 3.5~4.5만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '가성비 좋은 국산 강마루. 시공이 쉽고 관리가 편합니다.', pros: ['시공 간편', '가성비 우수', '관리 용이'], cons: ['내구성 한계', '리얼 우드감 부족'] },
+                        { name: 'LG 하우시스 강마루', price: '평당 4~5.5만원', durability: '★★★★', design: '★★★☆', badge: 'best', desc: 'LG 브랜드 강마루. 다양한 패턴과 안정적인 품질.', pros: ['브랜드 신뢰', '다양한 색상', 'AS 용이'], cons: ['접착식 대비 소음'] }
+                    ],
+                    '중급': [
+                        { name: '한화 프리미엄 강마루 맥시', price: '평당 6~8만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '두께감 있는 고급 강마루. 실제 원목과 유사한 질감.', pros: ['리얼 우드 질감', '내구성 우수', '흡음 효과'], cons: ['가격대 있음'] },
+                        { name: '대림 바스 SPC 바닥재', price: '평당 5~7만원', durability: '★★★★★', design: '★★★☆', badge: 'value', desc: '방수 기능이 탁월한 SPC 바닥재. 욕실/주방에도 사용 가능.', pros: ['완전 방수', '긁힘 방지', '열전도 우수'], cons: ['차가운 느낌'] }
+                    ],
+                    '프리미엄': [
+                        { name: '유럽산 오크 원목마루', price: '평당 12~18만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '유럽산 천연 오크 원목. 시간이 갈수록 깊어지는 색감.', pros: ['천연 소재', '고급 질감', '리사이클 가능'], cons: ['관리 필요', '높은 가격'] },
+                        { name: '에르노 헤링본 마루', price: '평당 15~22만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '헤링본 패턴의 프리미엄 마루. 공간에 클래식한 고급감을 더합니다.', pros: ['독특한 패턴', '최고급 마감', '자산 가치'], cons: ['시공비 별도', '관리 주의'] }
+                    ]
+                },
+                '내추럴': {
+                    '실속': [
+                        { name: '동화자연마루 라이트오크', price: '평당 4~5.5만원', durability: '★★★☆', design: '★★★★', badge: 'best', desc: '밝은 오크 톤의 자연스러운 강마루. 내추럴 인테리어에 딱.', pros: ['자연스러운 색감', '밝은 분위기', '가성비'], cons: ['직사광선 변색'] },
+                        { name: 'KCC 숲 강마루', price: '평당 3.5~5만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '친환경 인증 강마루. 아이 있는 가정에 추천.', pros: ['친환경 인증', '저렴한 가격'], cons: ['패턴 제한'] }
+                    ],
+                    '중급': [
+                        { name: '한솔 자연마루 프리미엄', price: '평당 7~10만원', durability: '★★★★', design: '★★★★★', badge: 'best', desc: '원목 합판 마루. 리얼 우드의 따뜻함과 안정성을 동시에.', pros: ['리얼 원목', '따뜻한 질감', '안정적 수축'], cons: ['물 주의'] },
+                        { name: '보령 참마루', price: '평당 6~8만원', durability: '★★★★', design: '★★★★', badge: 'value', desc: '천연 원목 합판 마루. 자연스러운 나뭇결이 살아있습니다.', pros: ['천연 나뭇결', '바닥 난방 호환'], cons: ['관리 필요'] }
+                    ],
+                    '프리미엄': [
+                        { name: '카린 월넛 원목마루', price: '평당 14~20만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '월넛 원목 마루. 깊은 갈색 톤이 고급스러운 내추럴 공간을 연출.', pros: ['프리미엄 원목', '깊은 색감', '오래 사용'], cons: ['고가'] },
+                        { name: '아카시아 핸드스크래치', price: '평당 12~16만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '손으로 스크래치 가공한 아카시아 원목. 세상에 하나뿐인 질감.', pros: ['유니크 질감', '내구성 최상'], cons: ['시공 난이도'] }
+                    ]
+                },
+                '클래식': {
+                    '실속': [{ name: '강마루 클래식 오크', price: '평당 4~6만원', durability: '★★★☆', design: '★★★★', badge: 'value', desc: '클래식 오크 톤의 가성비 강마루.', pros: ['클래식 색상', '가성비'], cons: ['내구성 한계'] }],
+                    '중급': [{ name: '대리석 패턴 SPC', price: '평당 6~9만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '대리석 느낌의 고급 SPC 바닥재. 클래식한 공간에 잘 어울림.', pros: ['대리석 질감', '방수', '관리 쉬움'], cons: ['차가운 느낌'] }],
+                    '프리미엄': [{ name: '이탈리아 대리석 타일', price: '평당 20~35만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '이탈리아 수입 대리석 타일. 공간에 럭셔리한 클래식 무드를 완성.', pros: ['최고급 소재', '럭셔리 무드'], cons: ['매우 고가', '차가운 바닥'] }]
+                },
+                '인더스트리얼': {
+                    '실속': [{ name: '폴리싱 콘크리트 시트', price: '평당 2~3.5만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '콘크리트 느낌의 시트 바닥재. 인더스트리얼 분위기를 쉽게 연출.', pros: ['가성비', '분위기 연출'], cons: ['내구성 보통'] }],
+                    '중급': [{ name: '에폭시 마감 + SPC', price: '평당 7~12만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '에폭시 코팅 또는 고급 SPC 조합. 인더스트리얼 공간에 최적.', pros: ['내구성 우수', '원하는 컬러 가능'], cons: ['시공 복잡'] }],
+                    '프리미엄': [{ name: '마이크로 시멘트 바닥', price: '평당 15~25만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '마이크로 시멘트 마감. 이음새 없는 매끈한 콘크리트 바닥.', pros: ['이음새 없음', '최고급 마감'], cons: ['전문 시공 필요', '고가'] }]
+                }
+            },
+            '타일': {
+                '모던': {
+                    '실속': [{ name: '국산 600x600 포세린', price: '장당 1.5~3만원', durability: '★★★★', design: '★★★☆', badge: 'value', desc: '국산 포세린 타일. 욕실/현관에 무난하게 사용 가능.', pros: ['가성비', '내구성'], cons: ['디자인 한정'] }],
+                    '중급': [{ name: '스페인산 매트 포세린', price: '장당 3~6만원', durability: '★★★★★', design: '★★★★', badge: 'best', desc: '스페인 수입 무광 포세린. 모던 인테리어의 정석.', pros: ['매트 질감', '고급 수입'], cons: ['가격'] }],
+                    '프리미엄': [{ name: '이탈리아 대형 슬라브', price: '장당 8~15만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '1200x2400 이탈리아 대형 슬라브 타일. 이음새 최소화로 고급감 극대화.', pros: ['대형 사이즈', '이음새 최소'], cons: ['시공비 별도', '고가'] }]
+                },
+                '내추럴': {
+                    '실속': [{ name: '우드룩 포세린 타일', price: '장당 2~4만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '원목 느낌의 포세린 타일. 욕실에 우드 감성을 더합니다.', pros: ['우드 질감', '방수', '내구성'], cons: ['차가운 느낌'] }],
+                    '중급': [{ name: '자연석 패턴 타일', price: '장당 4~7만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '자연석 질감의 타일. 내추럴 욕실에 완벽한 선택.', pros: ['자연스러운 질감', '고급감'], cons: ['가격'] }],
+                    '프리미엄': [{ name: '천연 트래버틴 타일', price: '장당 8~12만원', durability: '★★★★', design: '★★★★★', badge: 'premium', desc: '천연 트래버틴 석재 타일. 자연의 질감이 그대로 살아있습니다.', pros: ['천연 소재', '유니크 패턴'], cons: ['관리 필요'] }]
+                },
+                '클래식': {
+                    '실속': [{ name: '마블룩 포세린', price: '장당 2~4만원', durability: '★★★★', design: '★★★☆', badge: 'value', desc: '대리석 무늬 포세린 타일. 클래식한 분위기를 합리적 가격에.', pros: ['대리석 느낌', '가성비'], cons: ['인공 느낌'] }],
+                    '중급': [{ name: '칼라카타 포세린', price: '장당 5~8만원', durability: '★★★★★', design: '★★★★★', badge: 'best', desc: '칼라카타 대리석 패턴의 고급 포세린. 욕실/주방에 럭셔리함을.', pros: ['럭셔리 패턴', '관리 쉬움'], cons: ['인공 소재'] }],
+                    '프리미엄': [{ name: '이탈리아 천연 대리석', price: '장당 15~30만원', durability: '★★★★', design: '★★★★★', badge: 'premium', desc: '이탈리아 직수입 천연 대리석. 진짜 대리석의 품격.', pros: ['천연 소재', '최고급'], cons: ['관리 까다로움', '매우 고가'] }]
+                },
+                '인더스트리얼': {
+                    '실속': [{ name: '시멘트룩 타일', price: '장당 1.5~3만원', durability: '★★★★', design: '★★★☆', badge: 'value', desc: '시멘트 느낌의 타일. 인더스트리얼 공간에 딱.', pros: ['분위기 연출', '가성비'], cons: ['디자인 제한'] }],
+                    '중급': [{ name: '테라조 타일', price: '장당 4~7만원', durability: '★★★★★', design: '★★★★', badge: 'best', desc: '테라조 패턴 타일. 복고+현대 감성의 조화.', pros: ['유니크 패턴', '내구성'], cons: ['호불호'] }],
+                    '프리미엄': [{ name: '핸드메이드 테라코타', price: '장당 8~14만원', durability: '★★★★', design: '★★★★★', badge: 'premium', desc: '수제 테라코타 타일. 하나하나 다른 질감이 매력.', pros: ['수제 질감', '유니크'], cons: ['관리 필요'] }]
+                }
+            }
+        };
+
+        // Fallback for categories not fully populated
+        function getMaterials(cat, style, budget) {
+            if (materialDB[cat] && materialDB[cat][style] && materialDB[cat][style][budget]) {
+                return materialDB[cat][style][budget];
+            }
+            // Fallback
+            const fallbacks = {
+                '도어': [
+                    { name: 'ABS 도어 (국산)', price: '개당 15~25만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '가성비 좋은 국산 ABS 도어. 다양한 색상 선택 가능.', pros: ['가성비', '색상 다양'], cons: ['질감 한계'] },
+                    { name: '원목무늬 하이글로시', price: '개당 25~40만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '하이글로시 마감의 원목 무늬 도어. 고급스러운 마감.', pros: ['고급 마감', '원목 느낌'], cons: ['스크래치 주의'] },
+                    { name: '유럽산 원목 도어', price: '개당 50~100만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '유럽 수입 원목 도어. 무게감과 질감이 다릅니다.', pros: ['천연 원목', '최고급'], cons: ['고가', '관리'] }
+                ],
+                '도배': [
+                    { name: '실크 벽지 (합지)', price: '롤당 1~2만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '가성비 좋은 합지 벽지. 기본 도배에 적합.', pros: ['저렴', '시공 쉬움'], cons: ['내구성 짧음'] },
+                    { name: '광폭 실크 벽지', price: '롤당 3~5만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '광폭 실크 벽지. 이음새가 적어 깔끔합니다.', pros: ['이음새 적음', '깔끔'], cons: ['가격'] },
+                    { name: '수입 프리미엄 벽지', price: '롤당 8~20만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '유럽/일본 수입 벽지. 독특한 텍스처와 패턴.', pros: ['유니크', '최고급'], cons: ['매우 고가'] }
+                ],
+                '주방': [
+                    { name: '인조대리석 상판', price: '미터당 15~25만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '국산 인조대리석. 가성비 좋은 주방 상판.', pros: ['가성비', '관리 쉬움'], cons: ['열 변색'] },
+                    { name: '엔지니어드 스톤', price: '미터당 30~50만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '실스톤/카이저스톤급 엔지니어드 스톤. 내구성 탁월.', pros: ['내구성 최상', '얼룩 방지'], cons: ['무게'] },
+                    { name: '천연 대리석 상판', price: '미터당 60~120만원', durability: '★★★★', design: '★★★★★', badge: 'premium', desc: '천연 대리석 주방 상판. 럭셔리 주방의 완성.', pros: ['천연 소재', '럭셔리'], cons: ['관리 까다로움'] }
+                ],
+                '조명': [
+                    { name: 'LED 매입등 세트', price: '개당 1~3만원', durability: '★★★★', design: '★★★☆', badge: 'value', desc: 'LED 다운라이트. 기본 조명으로 깔끔.', pros: ['에너지 절약', '저렴'], cons: ['분위기 제한'] },
+                    { name: '간접조명 + 펜던트', price: '세트 30~60만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '간접조명과 디자인 펜던트 조합. 분위기를 살립니다.', pros: ['분위기 연출', '디밍 가능'], cons: ['설치 복잡'] },
+                    { name: '수입 디자이너 조명', price: '개당 50~200만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '북유럽/이탈리아 디자이너 조명. 공간의 포인트가 됩니다.', pros: ['디자인 아트', '포인트'], cons: ['매우 고가'] }
+                ],
+                '욕실': [
+                    { name: '대림바스 기본 세트', price: '세트 80~150만원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '대림바스 욕실 세트(양변기+세면대+수전). 국산 기본.', pros: ['가성비', 'AS 용이'], cons: ['기본 디자인'] },
+                    { name: '아메리칸 스탠다드 세트', price: '세트 150~300만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: '프리미엄 욕실 기구 세트. 디자인과 기능 모두 만족.', pros: ['고급 디자인', '내구성'], cons: ['가격'] },
+                    { name: '듀라빗/TOTO 수입', price: '세트 400~800만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '독일/일본 최고급 욕실 브랜드. 호텔급 욕실의 완성.', pros: ['최고급 브랜드', '호텔급'], cons: ['매우 고가'] }
+                ],
+                '몰딩': [
+                    { name: 'PVC 몰딩/걸레받이', price: '미터당 3~5천원', durability: '★★★☆', design: '★★★☆', badge: 'value', desc: '기본 PVC 몰딩. 가성비 좋은 마감.', pros: ['저렴', '시공 쉬움'], cons: ['질감 한계'] },
+                    { name: 'MDF 도장 몰딩', price: '미터당 8천~1.5만원', durability: '★★★★', design: '★★★★', badge: 'best', desc: 'MDF 소재 도장 몰딩. 깔끔한 라인과 마감.', pros: ['깔끔한 마감', '페인트 가능'], cons: ['습기 주의'] },
+                    { name: '원목 몰딩', price: '미터당 1.5~3만원', durability: '★★★★★', design: '★★★★★', badge: 'premium', desc: '천연 원목 몰딩. 원목 마루와 완벽한 조화.', pros: ['천연 소재', '고급감'], cons: ['가격', '관리'] }
+                ]
+            };
+            return fallbacks[cat] || fallbacks['도어'];
+        }
+
+        function updateProgress() {
+            const el = document.getElementById('progress');
+            el.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot' + (i <= currentStep ? ' done' : '');
+                el.appendChild(dot);
+            }
+        }
+        updateProgress();
+
+        function selectCategory(card, cat) {
+            data.category = cat;
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            setTimeout(() => { currentStep = 2; updateProgress(); showStep(2); }, 300);
+        }
+
+        function selectOpt(btn, key, val) {
+            data[key] = val;
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            setTimeout(() => { currentStep++; updateProgress(); showStep(currentStep); }, 300);
+        }
+
+        function showStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            if (n <= 3) {
+                document.getElementById('step' + n).classList.add('active');
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const materials = getMaterials(data.category, data.style, data.budget);
+            let html = `<div class="question">🪵 ${data.category} 추천 결과 — ${data.style} / ${data.budget}</div>`;
+            html += '<div class="material-results">';
+            
+            materials.forEach(m => {
+                html += `<div class="material-card">
+                    <div class="material-header">
+                        <div class="material-name">${m.name}</div>
+                        <div class="material-badge badge-${m.badge}">${m.badge === 'best' ? '✨ BEST' : m.badge === 'premium' ? '👑 PREMIUM' : '💰 가성비'}</div>
+                    </div>
+                    <div class="material-specs">
+                        <div class="spec"><div class="spec-label">가격대</div><div class="spec-value">${m.price}</div></div>
+                        <div class="spec"><div class="spec-label">내구성</div><div class="spec-value">${m.durability}</div></div>
+                        <div class="spec"><div class="spec-label">디자인</div><div class="spec-value">${m.design}</div></div>
+                    </div>
+                    <div class="material-desc">${m.desc}</div>
+                    <div class="material-pros">${m.pros.map(p => `<span>✅ ${p}</span>`).join('')}</div>
+                    <div class="material-cons">${m.cons.map(c => `<span>⚠️ ${c}</span>`).join('')}</div>
+                </div>`;
+            });
+
+            html += '</div>';
+            html += `<div class="summary-box">
+                <h3>💡 스몰테이블 추천 팁</h3>
+                <p style="color:#ccc;line-height:1.7">자재 선택은 샘플을 직접 보고 만져보는 것이 가장 중요합니다.<br>
+                스몰테이블디자인그룹에서는 무료로 자재 샘플을 보여드리고,<br>
+                공간에 맞는 최적의 자재 조합을 제안해 드립니다.</p>
+            </div>`;
+            html += `<div class="disclaimer">⚠️ 가격은 2026년 기준 시장 평균이며, 수량/시공 조건에 따라 달라질 수 있습니다.</div>`;
+            html += `<div class="cta"><a href="https://open.kakao.com/o/s7h6q4Xf" target="_blank">📞 무료 자재 상담 신청</a></div>`;
+            html += `<div class="nav-buttons" style="margin-top:20px;justify-content:center"><button class="btn-back" onclick="location.reload()">🔄 다시 추천받기</button></div>`;
+
+            document.getElementById('result').innerHTML = html;
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 인테리어 컨설턴트 | 스몰테이블</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+        header { padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        header a { color: #667eea; text-decoration: none; font-size: 1.2rem; }
+        header h1 { font-size: 1.3rem; }
+        .container { max-width: 700px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; display: flex; flex-direction: column; }
+        .step { display: none; animation: fadeIn 0.3s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .question { font-size: 1.2rem; margin-bottom: 24px; line-height: 1.6; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .options button { background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 16px 20px; border-radius: 12px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; }
+        .options button:hover { border-color: #667eea; background: #1a1a2e; }
+        .options button.selected { border-color: #667eea; background: #1a1a3e; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; color: #999; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 14px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 1rem; }
+        .input-group textarea { min-height: 100px; resize: vertical; font-family: inherit; }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus { outline: none; border-color: #667eea; }
+        .nav-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .btn-next { padding: 14px 32px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn-next:hover { opacity: 0.85; }
+        .btn-back { padding: 14px 24px; background: transparent; border: 1px solid #444; color: #999; border-radius: 10px; cursor: pointer; font-size: 1rem; }
+        .progress { display: flex; gap: 8px; margin-bottom: 30px; }
+        .progress-dot { width: 40px; height: 4px; background: #333; border-radius: 2px; transition: background 0.3s; }
+        .progress-dot.done { background: #667eea; }
+        .result-card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 32px; margin-top: 20px; }
+        .result-card h2 { font-size: 1.5rem; margin-bottom: 20px; color: #667eea; }
+        .section { margin-bottom: 24px; }
+        .section h3 { font-size: 1.1rem; margin-bottom: 12px; color: #ccc; border-bottom: 1px solid #222; padding-bottom: 8px; }
+        .section p { color: #aaa; line-height: 1.8; font-size: 0.95rem; }
+        .tag { display: inline-block; padding: 6px 14px; background: #1a1a3e; border: 1px solid #667eea40; border-radius: 20px; color: #667eea; font-size: 0.85rem; margin: 4px 4px 4px 0; }
+        .color-swatch { display: inline-block; width: 32px; height: 32px; border-radius: 8px; margin: 4px; border: 2px solid #333; vertical-align: middle; }
+        .tip-box { background: #1a1a1a; border-left: 3px solid #667eea; padding: 16px; border-radius: 0 10px 10px 0; margin: 12px 0; color: #bbb; font-size: 0.9rem; line-height: 1.7; }
+        .cta { margin-top: 24px; text-align: center; }
+        .cta a { display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; text-decoration: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .checkbox-group label:hover { border-color: #667eea; }
+        .checkbox-group input[type="checkbox"] { accent-color: #667eea; }
+        .checkbox-group label.checked { border-color: #667eea; background: #1a1a3e; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← 홈</a>
+        <h1>🎨 AI 인테리어 컨설턴트</h1>
+    </header>
+    <div class="container">
+        <div class="progress" id="progress"></div>
+
+        <!-- Step 1: 공간 유형 -->
+        <div class="step active" id="step1">
+            <div class="question">어떤 공간을 꾸미려고 하시나요?</div>
+            <div class="options" id="spaceType">
+                <button onclick="selectOption(this,'spaceType','아파트 거실/주방')">🏢 아파트 거실 / 주방</button>
+                <button onclick="selectOption(this,'spaceType','아파트 침실')">🛏 아파트 침실</button>
+                <button onclick="selectOption(this,'spaceType','원룸/오피스텔')">🏬 원룸 / 오피스텔</button>
+                <button onclick="selectOption(this,'spaceType','상가/카페')">☕ 상가 / 카페</button>
+                <button onclick="selectOption(this,'spaceType','사무실')">💼 사무실</button>
+            </div>
+        </div>
+
+        <!-- Step 2: 선호 스타일 -->
+        <div class="step" id="step2">
+            <div class="question">선호하시는 인테리어 스타일은?</div>
+            <div class="options" id="styleType">
+                <button onclick="selectOption(this,'styleType','미니멀 모던')">⬜ 미니멀 모던 — 깔끔하고 군더더기 없는</button>
+                <button onclick="selectOption(this,'styleType','내추럴 우드')">🪵 내추럴 우드 — 따뜻한 원목 느낌</button>
+                <button onclick="selectOption(this,'styleType','북유럽')">🇸🇪 북유럽 — 밝고 아늑한 스칸디나비안</button>
+                <button onclick="selectOption(this,'styleType','모던 클래식')">🏛 모던 클래식 — 고급스러운 클래식 감성</button>
+                <button onclick="selectOption(this,'styleType','인더스트리얼')">🏭 인더스트리얼 — 노출 콘크리트, 철재</button>
+                <button onclick="selectOption(this,'styleType','한국 전통 모던')">🏯 한국 전통 모던 — 한옥 감성 + 현대적</button>
+            </div>
+        </div>
+
+        <!-- Step 3: 예산 -->
+        <div class="step" id="step3">
+            <div class="question">인테리어 예산은 어느 정도인가요?</div>
+            <div class="options" id="budget">
+                <button onclick="selectOption(this,'budget','1천만원 이하')">💰 1천만원 이하 — 포인트 변경 위주</button>
+                <button onclick="selectOption(this,'budget','1천~3천만원')">💰💰 1천~3천만원 — 부분 리모델링</button>
+                <button onclick="selectOption(this,'budget','3천~7천만원')">💰💰💰 3천~7천만원 — 중간 규모 올수리</button>
+                <button onclick="selectOption(this,'budget','7천만원~1.5억')">💎 7천만원~1.5억 — 프리미엄 올수리</button>
+                <button onclick="selectOption(this,'budget','1.5억 이상')">👑 1.5억 이상 — 하이엔드 리모델링</button>
+            </div>
+        </div>
+
+        <!-- Step 4: 가구원 -->
+        <div class="step" id="step4">
+            <div class="question">함께 사시는 분들은 누구인가요?</div>
+            <div class="options" id="family">
+                <button onclick="selectOption(this,'family','1인 가구')">🧑 1인 가구</button>
+                <button onclick="selectOption(this,'family','신혼부부')">💑 신혼부부</button>
+                <button onclick="selectOption(this,'family','영유아 자녀 가정')">👶 영유아 자녀 있는 가정</button>
+                <button onclick="selectOption(this,'family','초등 이상 자녀 가정')">👨‍👩‍👧‍👦 초등학생 이상 자녀 가정</button>
+                <button onclick="selectOption(this,'family','반려동물 가정')">🐶 반려동물과 함께</button>
+            </div>
+        </div>
+
+        <!-- Step 5: 중요 요소 -->
+        <div class="step" id="step5">
+            <div class="question">인테리어에서 가장 중요한 것은? (복수 선택 가능)</div>
+            <div class="checkbox-group" id="priorities">
+                <label><input type="checkbox" value="수납" onchange="toggleCheck(this)"> 🗄 수납 공간</label>
+                <label><input type="checkbox" value="채광" onchange="toggleCheck(this)"> ☀️ 자연 채광</label>
+                <label><input type="checkbox" value="동선" onchange="toggleCheck(this)"> 🚶 생활 동선</label>
+                <label><input type="checkbox" value="가성비" onchange="toggleCheck(this)"> 💵 가성비</label>
+                <label><input type="checkbox" value="디자인" onchange="toggleCheck(this)"> 🎨 디자인 감성</label>
+                <label><input type="checkbox" value="내구성" onchange="toggleCheck(this)"> 🛡 내구성/관리</label>
+                <label><input type="checkbox" value="방음" onchange="toggleCheck(this)"> 🔇 방음</label>
+                <label><input type="checkbox" value="친환경" onchange="toggleCheck(this)"> 🌿 친환경 자재</label>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(4)">← 이전</button>
+                <button class="btn-next" onclick="generateConsult()">컨설팅 결과 보기 →</button>
+            </div>
+        </div>
+
+        <!-- Step 6: 추가 요청 (선택) -->
+        <div class="step" id="step6">
+            <div class="question">추가로 전달하고 싶은 내용이 있나요? (선택)</div>
+            <div class="input-group">
+                <textarea id="extraNote" placeholder="예: 신발이 많아서 현관 수납이 중요해요, 재택근무 공간이 필요해요..."></textarea>
+            </div>
+            <div class="nav-buttons">
+                <button class="btn-back" onclick="goStep(5)">← 이전</button>
+                <button class="btn-next" onclick="generateConsult()">컨설팅 결과 보기 →</button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div class="step" id="result"></div>
+    </div>
+
+    <script>
+        const data = {};
+        const totalSteps = 5;
+        let currentStep = 1;
+
+        function updateProgress() {
+            const el = document.getElementById('progress');
+            el.innerHTML = '';
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot' + (i <= currentStep ? ' done' : '');
+                el.appendChild(dot);
+            }
+        }
+        updateProgress();
+
+        function selectOption(btn, key, value) {
+            data[key] = value;
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            setTimeout(() => goStep(currentStep + 1), 300);
+        }
+
+        function toggleCheck(cb) {
+            cb.closest('label').classList.toggle('checked', cb.checked);
+        }
+
+        function goStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('step' + n);
+            if (target) { target.classList.add('active'); currentStep = n; }
+            updateProgress();
+        }
+
+        // Style data
+        const styleData = {
+            '미니멀 모던': {
+                desc: '불필요한 요소를 최소화하고, 깨끗한 선과 중성 톤으로 공간에 여백의 미를 살리는 스타일입니다.',
+                colors: ['#FFFFFF','#F5F5F5','#2C2C2C','#B0B0B0','#E8E8E8'],
+                materials: ['무광 도장', '포세린 타일', '인조대리석 상판', '매립형 조명', '히든 도어'],
+                tips: ['벽면 수납장을 활용해 물건이 보이지 않게 정리하세요.', '바닥과 벽의 색상 차이를 줄여 공간이 넓어 보이게 합니다.', '간접조명으로 은은한 분위기를 연출하세요.'],
+                furniture: ['패브릭 소파 (그레이/화이트)', '월넛 또는 오크 다이닝 테이블', '매립형 붙박이장', '심플한 팬던트 조명']
+            },
+            '내추럴 우드': {
+                desc: '원목의 따뜻한 질감과 자연 소재를 활용해 편안하고 아늑한 공간을 만드는 스타일입니다.',
+                colors: ['#F5E6D3','#DEB887','#8B7355','#FFFFFF','#4A7C59'],
+                materials: ['원목 마루 (오크/월넛)', '무늬목 시트지', '라탄 소품', '리넨 커튼', '자연석 타일'],
+                tips: ['원목 톤의 통일감을 맞추세요 (오크면 오크 계열로).', '그린 식물로 포인트를 주면 효과적입니다.', '과한 패턴보다는 자연 텍스처를 살리세요.'],
+                furniture: ['원목 프레임 소파', '원목 식탁 + 라탄 의자', '오픈형 원목 선반', '리넨 패브릭 커튼']
+            },
+            '북유럽': {
+                desc: '밝은 색상과 심플한 디자인, 기능적인 가구로 아늑하면서도 실용적인 공간을 만드는 스타일입니다.',
+                colors: ['#FFFFFF','#F0EDE8','#6B8E7B','#D4A574','#4A6741'],
+                materials: ['화이트 오크 마루', '화이트 도장 몰딩', '페인트 벽면 (밝은 톤)', '코르크 바닥 (부분)', '패브릭 소재'],
+                tips: ['화이트를 베이스로, 파스텔 컬러로 포인트를 주세요.', '조명은 따뜻한 색온도(3000K 이하)가 좋습니다.', '텍스타일(쿠션, 러그)로 아늑함을 더하세요.'],
+                furniture: ['라운드 다이닝 테이블', '패브릭 1인 소파/체어', '오픈형 선반 유닛', '우드 + 화이트 수납장']
+            },
+            '모던 클래식': {
+                desc: '클래식의 우아함에 현대적 감성을 더한 스타일로, 고급스러우면서도 세련된 공간을 연출합니다.',
+                colors: ['#1B2838','#C9B99A','#FFFFFF','#8B7355','#3D5A80'],
+                materials: ['대리석 (천연/엔지니어드)', '웨인스코팅 패널', '헤링본 마루', '골드/브라스 하드웨어', '벨벳 패브릭'],
+                tips: ['몰딩과 웨인스코팅으로 벽면에 깊이를 더하세요.', '브라스/골드 소재를 포인트로 사용하면 고급감이 올라갑니다.', '조명은 샹들리에 또는 아트 팬던트 추천합니다.'],
+                furniture: ['벨벳 소파 (다크 그린/네이비)', '대리석 상판 테이블', '골드 프레임 거울', '클래식 암체어']
+            },
+            '인더스트리얼': {
+                desc: '노출 콘크리트, 철재, 빈티지 소재를 활용해 거칠면서도 멋스러운 공간을 만드는 스타일입니다.',
+                colors: ['#3C3C3C','#8B8B8B','#1A1A1A','#C67B30','#D4D4D4'],
+                materials: ['노출 콘크리트 (또는 시멘트 도장)', '블랙 철재 프레임', '빈티지 브릭 타일', '합판/OSB 보드', '에디슨 전구'],
+                tips: ['파이프 선반, 철재 프레임 가구로 일관성을 유지하세요.', '따뜻한 조명(에디슨 벌브)으로 차가움을 중화합니다.', '가죽 소파나 빈티지 러그가 잘 어울립니다.'],
+                furniture: ['가죽 소파 (브라운/블랙)', '철재 프레임 테이블', '메탈 스툴/체어', '파이프 행거/선반']
+            },
+            '한국 전통 모던': {
+                desc: '한옥의 자연스러움과 전통 문양을 현대적으로 재해석한 고급스럽고 독특한 스타일입니다.',
+                colors: ['#F5F0E8','#8B6914','#2C2C2C','#C41E3A','#4A6741'],
+                materials: ['한지 벽지', '전통 문양 타일', '원목 (소나무/느티나무)', '황동 하드웨어', '한석/화강석'],
+                tips: ['전통 요소는 포인트로만 사용하고, 전체는 모던하게 가져가세요.', '창호를 활용한 파티션이 독특한 분위기를 냅니다.', '한지 조명으로 부드러운 빛을 연출하세요.'],
+                furniture: ['로우 소파/좌식 테이블', '전통 문양 쿠션', '한지 스탠드 조명', '원목 반닫이/수납장']
+            }
+        };
+
+        const familyTips = {
+            '1인 가구': '공간 효율을 극대화하세요. 접이식 가구, 멀티 기능 가구를 활용하면 좁은 공간도 넓게 쓸 수 있습니다.',
+            '신혼부부': '부부 각자의 취향을 반영할 수 있는 개인 공간을 확보하세요. 향후 가족 구성 변화도 고려하면 좋습니다.',
+            '영유아 자녀 가정': '안전이 최우선! 모서리 라운드 처리, 미끄럼 방지 바닥재, 친환경 도료를 선택하세요. 아이 성장에 따라 변경 가능한 구조가 좋습니다.',
+            '초등 이상 자녀 가정': '자녀 학습 공간과 수납을 충분히 확보하세요. 방음 처리도 고려하면 좋습니다.',
+            '반려동물 가정': '스크래치에 강한 바닥재(SPC/강마루), 세척 쉬운 벽면 마감, 반려동물 동선을 고려한 설계가 중요합니다.'
+        };
+
+        const budgetGuide = {
+            '1천만원 이하': { level: '포인트 체인지', detail: '도배, 장판 교체, 조명 변경, 페인트 작업 정도가 가능합니다. 포인트 벽지나 액센트 월로 분위기를 바꿔보세요.' },
+            '1천~3천만원': { level: '부분 리모델링', detail: '주방 또는 욕실 중 한 곳 리모델링 + 도배/마루 교체가 가능합니다. 가장 많이 사용하는 공간에 집중 투자하세요.' },
+            '3천~7천만원': { level: '중급 올수리', detail: '전체 도배/마루 + 주방/욕실 리모델링이 가능합니다. 국산 중급 자재로 깔끔한 올수리를 할 수 있는 예산입니다.' },
+            '7천만원~1.5억': { level: '프리미엄 올수리', detail: '구조 변경 포함 전체 리모델링이 가능합니다. 수입 자재, 맞춤 가구, 시스템 수납 등 디테일한 시공까지 가능합니다.' },
+            '1.5억 이상': { level: '하이엔드 리모델링', detail: '최고급 수입 자재, 맞춤 제작 가구, 스마트홈 시스템까지 원하시는 모든 것을 구현할 수 있습니다.' }
+        };
+
+        function generateConsult() {
+            const space = data.spaceType || '아파트 거실/주방';
+            const style = data.styleType || '미니멀 모던';
+            const budget = data.budget || '3천~7천만원';
+            const family = data.family || '1인 가구';
+            const note = document.getElementById('extraNote')?.value || '';
+            
+            const priorities = [];
+            document.querySelectorAll('#priorities input:checked').forEach(cb => priorities.push(cb.value));
+
+            const sd = styleData[style] || styleData['미니멀 모던'];
+            const bg = budgetGuide[budget] || budgetGuide['3천~7천만원'];
+            const ft = familyTips[family] || '';
+
+            let colorSwatches = sd.colors.map(c => `<span class="color-swatch" style="background:${c}" title="${c}"></span>`).join('');
+            let materialTags = sd.materials.map(m => `<span class="tag">${m}</span>`).join('');
+            let furnitureTags = sd.furniture.map(f => `<span class="tag">${f}</span>`).join('');
+            let priorityTags = priorities.length > 0 ? priorities.map(p => `<span class="tag">${p}</span>`).join('') : '<span class="tag">전체 균형</span>';
+            let tipsList = sd.tips.map(t => `• ${t}`).join('<br>');
+
+            let html = `
+                <div class="result-card">
+                    <h2>🎨 AI 인테리어 컨설팅 리포트</h2>
+                    
+                    <div class="section">
+                        <h3>📋 입력 정보</h3>
+                        <p><strong>공간:</strong> ${space} &nbsp;|&nbsp; <strong>스타일:</strong> ${style} &nbsp;|&nbsp; <strong>예산:</strong> ${budget}<br>
+                        <strong>가구원:</strong> ${family} &nbsp;|&nbsp; <strong>중점 요소:</strong> ${priorityTags}</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>✨ ${style} 스타일 가이드</h3>
+                        <p>${sd.desc}</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>🎨 추천 컬러 팔레트</h3>
+                        <p>${colorSwatches}</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>🪵 추천 마감재</h3>
+                        <p>${materialTags}</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>🛋 추천 가구/소품</h3>
+                        <p>${furnitureTags}</p>
+                    </div>
+
+                    <div class="section">
+                        <h3>💡 디자인 팁</h3>
+                        <div class="tip-box">${tipsList}</div>
+                    </div>
+
+                    <div class="section">
+                        <h3>💰 예산 가이드 — ${bg.level}</h3>
+                        <div class="tip-box">${bg.detail}</div>
+                    </div>
+
+                    <div class="section">
+                        <h3>👨‍👩‍👧 ${family} 맞춤 조언</h3>
+                        <div class="tip-box">${ft}</div>
+                    </div>
+                    ${note ? `<div class="section"><h3>📝 추가 참고</h3><div class="tip-box">말씀하신 "${note}" — 이 부분은 현장 상담 시 디자이너가 반영하여 맞춤 제안 드리겠습니다.</div></div>` : ''}
+                </div>
+                <div style="margin-top:20px;padding:16px;background:#1a1a1a;border-radius:10px;color:#888;font-size:0.85rem;line-height:1.6;">
+                    ⚠️ 본 컨설팅은 AI가 일반적인 인테리어 트렌드와 데이터를 기반으로 제안한 <strong>참고용 가이드</strong>입니다.<br>
+                    실제 공간의 구조, 채광, 기존 마감 상태에 따라 최적의 방향이 달라질 수 있습니다.<br>
+                    맞춤 디자인 상담은 스몰테이블디자인그룹에 문의해 주세요.
+                </div>
+                <div class="cta">
+                    <a href="https://open.kakao.com/o/s7h6q4Xf" target="_blank">📞 무료 디자인 상담 신청</a>
+                </div>
+            `;
+
+            document.getElementById('result').innerHTML = html;
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('result').classList.add('active');
+        }
+    </script>
+</body>
+</html>
